@@ -33,6 +33,7 @@ export class AuthService {
     try {
       await this.usersRepository.save(user);
     } catch (error) {
+      // postgres unique violation error code
       if (error.code === 23505) {
         throw new ConflictException('Username already exists');
       } else {
