@@ -3,14 +3,16 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { TaskStatus } from './task-status.enum';
+import { TaskStatus } from './domain/task-status.enum';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
-import { Task } from './task.entity';
+import { Task } from './domain/task.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from 'src/auth/user.entity';
+import { User } from 'src/modules/auth/user.entity';
 import { Logger } from '@nestjs/common';
+import { CreateTaskService } from './commands/create-task/create-task.service';
+import { CreateTaskCommand } from './commands/create-task/create-task.command';
 
 @Injectable()
 export class TasksService {
@@ -19,6 +21,7 @@ export class TasksService {
   constructor(
     @InjectRepository(Task)
     private readonly tasksRepository: Repository<Task>,
+    private readonly createTasksService: CreateTaskService,
   ) {}
 
   async getTasks(filterDto: GetTasksFilterDto, user: User): Promise<Task[]> {
@@ -73,15 +76,12 @@ export class TasksService {
 
   async createTask(createTaskDto: CreateTaskDto, user: User): Promise<Task> {
     try {
-      const { title, description } = createTaskDto;
-      const task = this.tasksRepository.create({
-        title,
-        description,
-        status: TaskStatus.OPEN,
+      const command = new CreateTaskCommand(
+        createTaskDto.title,
+        createTaskDto.description,
         user,
-      });
-      const result = await this.tasksRepository.save(task);
-
+      );
+      const result = await this.createTasksService.execute(command);
       return result;
     } catch (error) {
       this.logger.error(
