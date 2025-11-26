@@ -15,6 +15,8 @@ import { CreateTaskService } from './commands/create-task/create-task.service';
 import { CreateTaskCommand } from './commands/create-task/create-task.command';
 import { UpdateTaskStatusCommand } from './commands/update-task-status/update-task-status.command';
 import { UpdateTaskStatusService } from './commands/update-task-status/update-task-status.service';
+import { DeleteTaskService } from './commands/delete-task/delete-task.service';
+import { DeleteTaskCommand } from './commands/delete-task/delete-task.command';
 
 @Injectable()
 export class TasksService {
@@ -25,6 +27,7 @@ export class TasksService {
     private readonly tasksRepository: Repository<Task>,
     private readonly createTasksService: CreateTaskService,
     private readonly updateTaskStatusService: UpdateTaskStatusService,
+    private readonly deleteTaskService: DeleteTaskService,
   ) {}
 
   async getTasks(filterDto: GetTasksFilterDto, user: User): Promise<Task[]> {
@@ -96,20 +99,7 @@ export class TasksService {
   }
 
   async deleteTask(id: string, user: User): Promise<void> {
-    try {
-      const result = await this.tasksRepository.delete({ id, user });
-      if (result.affected === 0) {
-        this.logger.warn(
-          `Task with ID '${id}' not found for user '${user.username}'`,
-        );
-        throw new NotFoundException(`Task with ${id} not found`);
-      }
-    } catch (error) {
-      this.logger.error(
-        `Failed to delete task with ID '${id}' for user '${user.username}'`,
-        error.stack,
-      );
-      throw new InternalServerErrorException();
-    }
+    const command = new DeleteTaskCommand(id, user);
+    return this.deleteTaskService.execute(command);
   }
 }
