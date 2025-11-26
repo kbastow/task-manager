@@ -13,6 +13,8 @@ import { User } from 'src/modules/auth/user.entity';
 import { Logger } from '@nestjs/common';
 import { CreateTaskService } from './commands/create-task/create-task.service';
 import { CreateTaskCommand } from './commands/create-task/create-task.command';
+import { UpdateTaskStatusCommand } from './commands/update-task-status/update-task-status.command';
+import { UpdateTaskStatusService } from './commands/update-task-status/update-task-status.service';
 
 @Injectable()
 export class TasksService {
@@ -22,6 +24,7 @@ export class TasksService {
     @InjectRepository(Task)
     private readonly tasksRepository: Repository<Task>,
     private readonly createTasksService: CreateTaskService,
+    private readonly updateTaskStatusService: UpdateTaskStatusService,
   ) {}
 
   async getTasks(filterDto: GetTasksFilterDto, user: User): Promise<Task[]> {
@@ -75,21 +78,12 @@ export class TasksService {
   }
 
   async createTask(createTaskDto: CreateTaskDto, user: User): Promise<Task> {
-    try {
-      const command = new CreateTaskCommand(
-        createTaskDto.title,
-        createTaskDto.description,
-        user,
-      );
-      const result = await this.createTasksService.execute(command);
-      return result;
-    } catch (error) {
-      this.logger.error(
-        `Failed to create task for user '${user.username}'`,
-        error.stack,
-      );
-      throw new InternalServerErrorException();
-    }
+    const command = new CreateTaskCommand(
+      createTaskDto.title,
+      createTaskDto.description,
+      user,
+    );
+    return await this.createTasksService.execute(command);
   }
 
   async updateTaskStatus(
@@ -97,19 +91,8 @@ export class TasksService {
     status: TaskStatus,
     user: User,
   ): Promise<Task> {
-    try {
-      const task = await this.getTaskById(id, user);
-      task.status = status;
-      await this.tasksRepository.save(task);
-
-      return task;
-    } catch (error) {
-      this.logger.error(
-        `Failed to update status for task with ID '${id}' for user '${user.username}'`,
-        error.stack,
-      );
-      throw new InternalServerErrorException();
-    }
+    const command = new UpdateTaskStatusCommand(id, status, user);
+    return await this.updateTaskStatusService.execute(command);
   }
 
   async deleteTask(id: string, user: User): Promise<void> {

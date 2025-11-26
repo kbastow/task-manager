@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Task } from '../../domain/task.entity';
@@ -7,6 +11,8 @@ import { CreateTaskCommand } from './create-task.command';
 
 @Injectable()
 export class CreateTaskService {
+  private logger = new Logger('CreateTaskService');
+
   constructor(
     @InjectRepository(Task)
     private readonly tasksRepository: Repository<Task>,
@@ -14,12 +20,22 @@ export class CreateTaskService {
 
   async execute(command: CreateTaskCommand): Promise<Task> {
     const { title, description, user } = command;
-    const task = this.tasksRepository.create({
-      title,
-      description,
-      status: TaskStatus.OPEN,
-      user,
-    });
-    return await this.tasksRepository.save(task);
+    try {
+      const task = this.tasksRepository.create({
+        title,
+        description,
+        status: TaskStatus.OPEN,
+        user,
+      });
+      const result = await this.tasksRepository.save(task);
+      this.logger.log(`Task created for user '${user.username}'`);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Failed to create task for user '${user?.username ?? 'unknown'}'`,
+        error.stack,
+      );
+      throw new InternalServerErrorException();
+    }
   }
 }
