@@ -3,10 +3,8 @@ import { TaskStatus } from './domain/task-status.enum';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
 import { Task } from './domain/task.entity';
-import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from 'src/modules/auth/user.entity';
-import { Logger } from '@nestjs/common';
+import { User } from '../auth/user.entity';
 import { CreateTaskService } from './commands/create-task/create-task.service';
 import { CreateTaskCommand } from './commands/create-task/create-task.command';
 import { UpdateTaskStatusCommand } from './commands/update-task-status/update-task-status.command';
@@ -20,11 +18,8 @@ import { GetTaskByIdQuery } from './queries/get-tasks/get-task-by-id.query';
 
 @Injectable()
 export class TasksService {
-  private logger = new Logger('TasksRepository', { timestamp: true });
-
   constructor(
     @InjectRepository(Task)
-    private readonly tasksRepository: Repository<Task>,
     private readonly createTasksService: CreateTaskService,
     private readonly updateTaskStatusService: UpdateTaskStatusService,
     private readonly deleteTaskService: DeleteTaskService,
