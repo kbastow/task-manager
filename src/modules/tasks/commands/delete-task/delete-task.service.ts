@@ -19,8 +19,8 @@ export class DeleteTaskService {
   ) {}
 
   async execute(command: DeleteTaskCommand): Promise<void> {
+    const { id, user } = command;
     try {
-      const { id, user } = command;
       const result = await this.tasksRepository.delete({ id, user });
       if (result.affected === 0) {
         this.logger.warn(
@@ -36,7 +36,9 @@ export class DeleteTaskService {
         `Failed to delete task with ID '${command.id}' for user '${command.user?.username ?? 'unknown'}'`,
         error.stack,
       );
-      throw new InternalServerErrorException();
+      throw error instanceof NotFoundException
+        ? error
+        : new InternalServerErrorException();
     }
   }
 }
